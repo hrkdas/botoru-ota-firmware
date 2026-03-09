@@ -1,0 +1,9 @@
+{
+  "channel": "stable",
+  "version": "1.0.2",
+  "firmware_url": "https://github.com/hrkdas/botoru-firmware/releases/download/v1.0.2/firmware_v1.0.2.bin",
+  "sha256": "095f188a565fdeefc528fca6819458f805dc71d732bddc0a455a9ee5a8753fc3",
+  "size": 1688032,
+  "changelog": "Initial public OTA release for hybrid GitHub firmware distribution.",
+  "force": false
+}
