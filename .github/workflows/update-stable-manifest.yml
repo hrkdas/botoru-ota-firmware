@@ -22,19 +22,15 @@ jobs:
         with:
           ref: ${{ github.event.repository.default_branch }}
 
-      - name: Generate manifest from published release asset
+      - name: Parse release and select asset
         env:
-          GITHUB_TOKEN: ${{ github.token }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           python3 <<'PY'
-          import hashlib
           import json
           import os
           import pathlib
-          import sys
 
           event_path = os.environ['GITHUB_EVENT_PATH']
           with open(event_path, 'r', encoding='utf-8') as fh:
@@ -43,7 +39,6 @@ jobs:
           release = event.get('release') or {}
           tag = release.get('tag_name', '').strip()
           assets = release.get('assets') or []
-          repo_full_name = os.environ['GITHUB_REPOSITORY']
 
           if not tag:
               raise SystemExit('Release tag is missing in event payload')
@@ -59,7 +54,6 @@ jobs:
               with open(github_env, 'a', encoding='utf-8') as env_file:
                   env_file.write(f'RELEASE_TAG={tag}\n')
 
-          selected = None
           exact_matches = [a for a in assets if a.get('name') in expected_names]
           if exact_matches:
               selected = exact_matches[0]
@@ -81,27 +75,8 @@ jobs:
           print(f'Selected asset: {asset_name}')
           print(f'Asset download URL: {asset_url}')
 
-          download_path = pathlib.Path('release_asset.bin')
-          with open('asset_url.txt', 'w', encoding='utf-8') as fh:
-              fh.write(asset_url)
-          print(f'Computed sha256: {sha256}')
-          print(f'Computed size: {size}')
-
-          manifest = {
-              'channel': 'stable',
-              'version': version,
-              'firmware_url': f'https://github.com/{repo_full_name}/releases/download/{tag}/{asset_name}',
-              'sha256': sha256,
-              'size': size,
-              'changelog': f'Auto-generated from release {tag}',
-              'force': False,
-          }
-
-          manifest_dir = pathlib.Path('manifest')
-          manifest_dir.mkdir(parents=True, exist_ok=True)
-          manifest_path = manifest_dir / 'stable.json'
-          manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
-          print(f'Manifest updated: {manifest_path}')
+          pathlib.Path('asset_url.txt').write_text(asset_url, encoding='utf-8')
+          pathlib.Path('asset_name.txt').write_text(asset_name, encoding='utf-8')
           PY
 
       - name: Download selected release asset
@@ -111,6 +86,7 @@ jobs:
           echo "Downloading public asset: ${ASSET_URL}"
           curl -L --fail --output release_asset.bin "${ASSET_URL}"
           test -s release_asset.bin
+          echo "Downloaded asset path: $(pwd)/release_asset.bin"
 
       - name: Compute hash and size, then write manifest
         env:
@@ -130,42 +106,20 @@ jobs:
 
           release = event.get('release') or {}
           tag = release.get('tag_name', '').strip()
-          assets = release.get('assets') or []
           repo_full_name = os.environ['GITHUB_REPOSITORY']
 
           if not tag:
               raise SystemExit('Release tag is missing in event payload')
 
           version = tag[1:] if tag.startswith('v') else tag
-          expected_names = [f'firmware_v{version}.bin', f'firmware_{version}.bin']
-          print(f'Detected tag: {tag}')
-          print(f'Derived version: {version}')
-          print(f'Expected asset names: {expected_names}')
-
-          selected = None
-          exact_matches = [a for a in assets if a.get('name') in expected_names]
-          if exact_matches:
-              selected = exact_matches[0]
-          else:
-              bin_assets = [a for a in assets if str(a.get('name', '')).endswith('.bin')]
-              if len(bin_assets) == 1:
-                  selected = bin_assets[0]
-              elif len(bin_assets) == 0:
-                  raise SystemExit('No .bin asset found on the published release')
-              else:
-                  names = ', '.join(str(a.get('name')) for a in bin_assets)
-                  raise SystemExit(f'Ambiguous .bin assets on release: {names}')
-
-          asset_name = str(selected.get('name', '')).strip()
+          asset_name = pathlib.Path('asset_name.txt').read_text(encoding='utf-8').strip()
           if not asset_name:
-              raise SystemExit('Selected release asset is missing name')
+              raise SystemExit('Selected release asset name is empty')
 
           download_path = pathlib.Path('release_asset.bin')
           data = download_path.read_bytes()
           if not data:
               raise SystemExit('Downloaded release asset is empty')
-
-          print(f'Downloaded asset path: {download_path.resolve()}')
 
           sha256 = hashlib.sha256(data).hexdigest()
           size = len(data)
