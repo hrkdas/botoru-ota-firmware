@@ -22,6 +22,39 @@ jobs:
         with:
           ref: ${{ github.event.repository.default_branch }}
 
+      - name: Hard clean release tag source snapshot
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
+          TARGET_REF: ${{ github.event.release.target_commitish }}
+        run: |
+          set -euo pipefail
+
+          git fetch --force --tags --prune
+
+          if git rev-parse -q --verify "refs/tags/$TAG_NAME^{commit}" >/dev/null 2>&1; then
+            CURRENT_TAG_SHA=$(git rev-parse "refs/tags/$TAG_NAME")
+          else
+            CURRENT_TAG_SHA=""
+          fi
+
+          if git rev-parse -q --verify "$TARGET_REF^{commit}" >/dev/null 2>&1; then
+            TARGET_SHA=$(git rev-parse "$TARGET_REF")
+          elif git rev-parse -q --verify "origin/$TARGET_REF" >/dev/null 2>&1; then
+            TARGET_SHA=$(git rev-parse "origin/$TARGET_REF")
+          else
+            echo "Unable to resolve release target ref: $TARGET_REF"
+            exit 1
+          fi
+
+          if [ "$CURRENT_TAG_SHA" = "$TARGET_SHA" ]; then
+            echo "Tag ${TAG_NAME} already points to ${TARGET_SHA}; no hard-clean required"
+            exit 0
+          fi
+
+          echo "Hard-cleaning tag ${TAG_NAME}: ${CURRENT_TAG_SHA:-<not found>} -> ${TARGET_SHA}"
+          git tag -f "$TAG_NAME" "$TARGET_SHA"
+          git push origin "+refs/tags/$TAG_NAME"
+
       - name: Parse release and select asset
         env:
           GITHUB_EVENT_PATH: ${{ github.event_path }}
