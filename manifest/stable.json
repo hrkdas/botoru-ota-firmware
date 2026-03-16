@@ -1,9 +1,9 @@
 {
   "channel": "stable",
-  "version": "1.0.4",
-  "firmware_url": "https://github.com/hrkdas/botoru-firmware/releases/download/v1.0.4/firmware_v1.0.4.bin",
-  "sha256": "282f4a447f966d55753047e36630855628f5e5cbaac2ef60d138f1580446569f",
+  "version": "1.0.5",
+  "firmware_url": "https://github.com/hrkdas/botoru-firmware/releases/download/v1.0.5/firmware_v1.0.5.bin",
+  "sha256": "7e374a94bdc012e46d17fe7e7dec6007cc262fa254705b7ef8e562f7dc6aeae5",
   "size": 1781664,
-  "changelog": "Auto-generated from release v1.0.4",
+  "changelog": "Auto-generated from release v1.0.5",
   "force": false
 }
