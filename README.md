@@ -1,1 +1,1 @@
-# botoru-firmware
+# botoru-ota-firmware
