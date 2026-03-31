@@ -64,50 +64,106 @@ jobs:
           import json
           import os
           import pathlib
+          import re
 
           event_path = os.environ['GITHUB_EVENT_PATH']
           with open(event_path, 'r', encoding='utf-8') as fh:
               event = json.load(fh)
 
           release = event.get('release') or {}
-          tag = release.get('tag_name', '').strip()
+          tag = str(release.get('tag_name', '')).strip()
           assets = release.get('assets') or []
 
           if not tag:
               raise SystemExit('Release tag is missing in event payload')
 
-          version = tag[1:] if tag.startswith('v') else tag
-          expected_names = [f'firmware_v{version}.bin', f'firmware_{version}.bin']
-          print(f'Detected tag: {tag}')
-          print(f'Derived version: {version}')
-          print(f'Expected asset names: {expected_names}')
+          semver_re = re.compile(r'^(?P<variant>boturo_[a-z0-9_]+)-v?(?P<version>\d+\.\d+\.\d+)$')
+          legacy_re = re.compile(r'^v?(?P<version>\d+\.\d+\.\d+)$')
+          asset_re = re.compile(
+              r'^firmware(?:_(?P<variant>boturo_[a-z0-9_]+))?_v?(?P<version>\d+\.\d+\.\d+)\.bin$'
+          )
+
+          tag_variant = None
+          tag_version = None
+          match = semver_re.match(tag)
+          if match:
+              tag_variant = match.group('variant')
+              tag_version = match.group('version')
+          else:
+              match = legacy_re.match(tag)
+              if match:
+                  tag_variant = 'boturo_cue'
+                  tag_version = match.group('version')
+
+          if tag_variant is None or tag_version is None:
+              raise SystemExit(
+                  'Unsupported release tag format. Use boturo_<variant>-vX.Y.Z '
+                  'or legacy vX.Y.Z for transitional Cue releases.'
+              )
 
           github_env = os.environ.get('GITHUB_ENV')
           if github_env:
               with open(github_env, 'a', encoding='utf-8') as env_file:
                   env_file.write(f'RELEASE_TAG={tag}\n')
+                  env_file.write(f'RELEASE_VARIANT={tag_variant}\n')
+                  env_file.write(f'RELEASE_VERSION={tag_version}\n')
 
-          exact_matches = [a for a in assets if a.get('name') in expected_names]
+          exact_matches = []
+          candidate_bin_assets = []
+          for asset in assets:
+              asset_name = str(asset.get('name', '')).strip()
+              if not asset_name.endswith('.bin'):
+                  continue
+              candidate_bin_assets.append(asset)
+              asset_match = asset_re.match(asset_name)
+              if asset_match is None:
+                  continue
+              asset_variant = asset_match.group('variant') or 'boturo_cue'
+              asset_version = asset_match.group('version')
+              if asset_variant == tag_variant and asset_version == tag_version:
+                  exact_matches.append(asset)
+
           if exact_matches:
               selected = exact_matches[0]
+          elif len(candidate_bin_assets) == 1:
+              selected = candidate_bin_assets[0]
+          elif len(candidate_bin_assets) == 0:
+              raise SystemExit('No .bin asset found on the published release')
           else:
-              bin_assets = [a for a in assets if str(a.get('name', '')).endswith('.bin')]
-              if len(bin_assets) == 1:
-                  selected = bin_assets[0]
-              elif len(bin_assets) == 0:
-                  raise SystemExit('No .bin asset found on the published release')
-              else:
-                  names = ', '.join(str(a.get('name')) for a in bin_assets)
-                  raise SystemExit(f'Ambiguous .bin assets on release: {names}')
+              names = ', '.join(str(a.get('name')) for a in candidate_bin_assets)
+              raise SystemExit(
+                  'Ambiguous .bin assets on release. Name assets like '
+                  'firmware_<variant>_vX.Y.Z.bin. Found: ' + names
+              )
 
           asset_name = str(selected.get('name', '')).strip()
           asset_url = str(selected.get('browser_download_url', '')).strip()
           if not asset_name or not asset_url:
               raise SystemExit('Selected release asset is missing name or browser_download_url')
 
+          asset_match = asset_re.match(asset_name)
+          if asset_match is None:
+              raise SystemExit(
+                  'Selected .bin asset name does not match expected pattern '
+                  'firmware_<variant>_vX.Y.Z.bin or legacy firmware_vX.Y.Z.bin'
+              )
+
+          asset_variant = asset_match.group('variant') or 'boturo_cue'
+          asset_version = asset_match.group('version')
+          if asset_variant != tag_variant or asset_version != tag_version:
+              raise SystemExit(
+                  f'Release tag ({tag_variant} {tag_version}) does not match '
+                  f'asset ({asset_variant} {asset_version})'
+              )
+
+          print(f'Detected tag: {tag}')
+          print(f'Derived variant: {tag_variant}')
+          print(f'Derived version: {tag_version}')
           print(f'Selected asset: {asset_name}')
           print(f'Asset download URL: {asset_url}')
 
+          pathlib.Path('release_variant.txt').write_text(tag_variant, encoding='utf-8')
+          pathlib.Path('release_version.txt').write_text(tag_version, encoding='utf-8')
           pathlib.Path('asset_url.txt').write_text(asset_url, encoding='utf-8')
           pathlib.Path('asset_name.txt').write_text(asset_name, encoding='utf-8')
           PY
@@ -121,7 +177,7 @@ jobs:
           test -s release_asset.bin
           echo "Downloaded asset path: $(pwd)/release_asset.bin"
 
-      - name: Compute hash and size, then write manifest
+      - name: Compute hash and size, then write manifests
         env:
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -132,22 +188,21 @@ jobs:
           import json
           import os
           import pathlib
+          import shutil
 
           event_path = os.environ['GITHUB_EVENT_PATH']
           with open(event_path, 'r', encoding='utf-8') as fh:
               event = json.load(fh)
 
           release = event.get('release') or {}
-          tag = release.get('tag_name', '').strip()
+          tag = str(release.get('tag_name', '')).strip()
           repo_full_name = os.environ['GITHUB_REPOSITORY']
-
-          if not tag:
-              raise SystemExit('Release tag is missing in event payload')
-
-          version = tag[1:] if tag.startswith('v') else tag
+          variant_key = pathlib.Path('release_variant.txt').read_text(encoding='utf-8').strip()
+          version = pathlib.Path('release_version.txt').read_text(encoding='utf-8').strip()
           asset_name = pathlib.Path('asset_name.txt').read_text(encoding='utf-8').strip()
-          if not asset_name:
-              raise SystemExit('Selected release asset name is empty')
+
+          if not tag or not variant_key or not version or not asset_name:
+              raise SystemExit('Release metadata is incomplete')
 
           download_path = pathlib.Path('release_asset.bin')
           data = download_path.read_bytes()
@@ -161,7 +216,9 @@ jobs:
 
           manifest = {
               'channel': 'stable',
+              'variant_key': variant_key,
               'version': version,
+              'release_tag': tag,
               'firmware_url': f'https://github.com/{repo_full_name}/releases/download/{tag}/{asset_name}',
               'sha256': sha256,
               'size': size,
@@ -169,22 +226,31 @@ jobs:
               'force': False,
           }
 
-          manifest_dir = pathlib.Path('manifest')
-          manifest_dir.mkdir(parents=True, exist_ok=True)
-          manifest_path = manifest_dir / 'stable.json'
-          manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
-          print(f'Manifest updated: {manifest_path}')
+          manifest_root = pathlib.Path('manifest')
+          variant_dir = manifest_root / variant_key
+          variant_dir.mkdir(parents=True, exist_ok=True)
+          variant_manifest_path = variant_dir / 'stable.json'
+          variant_manifest_path.write_text(
+              json.dumps(manifest, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          print(f'Variant manifest updated: {variant_manifest_path}')
+
+          if variant_key == 'boturo_cue':
+              legacy_manifest_path = manifest_root / 'stable.json'
+              shutil.copyfile(variant_manifest_path, legacy_manifest_path)
+              print(f'Legacy Cue manifest updated: {legacy_manifest_path}')
           PY
 
-      - name: Commit manifest if changed
+      - name: Commit manifest changes if needed
         run: |
           set -euo pipefail
-          if git diff --quiet -- manifest/stable.json; then
+          if git diff --quiet -- manifest; then
             echo "No manifest changes detected"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add manifest/stable.json
+          git add manifest
           git commit -m "chore: update stable manifest for ${RELEASE_TAG}"
           git push origin HEAD:${{ github.event.repository.default_branch }}
