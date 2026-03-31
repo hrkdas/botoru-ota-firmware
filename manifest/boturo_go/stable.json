@@ -6,6 +6,6 @@
   "firmware_url": "https://github.com/hrkdas/botoru-firmware/releases/download/boturo_go-v1.0.1/firmware_boturo_go_v1.0.1.bin",
   "sha256": "d4c124b07df3c3ab89230511aa1420889bb22c64f56b63aa8d6223100d660cc5",
   "size": 1419520,
-  "changelog": "## boturo_go v1.0.1\n- adds OTA variant visibility on the firmware BLE status surface\n- pairs with the app-side live variant preflight before flashing\n- release asset: firmware_boturo_go_v1.0.1.bin",
+  "changelog": "## boturo_go v1.0.1\n- auto-published from boturo_go\n- asset: firmware_boturo_go_v1.0.1.bin",
   "force": false
 }
