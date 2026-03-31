@@ -1,11 +1,11 @@
 {
   "channel": "stable",
   "variant_key": "boturo_go",
-  "version": "1.0.1",
-  "release_tag": "boturo_go-v1.0.1",
-  "firmware_url": "https://github.com/hrkdas/botoru-ota-firmware/releases/download/boturo_go-v1.0.1/firmware_boturo_go_v1.0.1.bin",
-  "sha256": "d4c124b07df3c3ab89230511aa1420889bb22c64f56b63aa8d6223100d660cc5",
+  "version": "1.0.2",
+  "release_tag": "boturo_go-v1.0.2",
+  "firmware_url": "https://github.com/hrkdas/botoru-ota-firmware/releases/download/boturo_go-v1.0.2/firmware_boturo_go_v1.0.2.bin",
+  "sha256": "fef3da41cdb6161c0e834140314b2d43de7a46de94ba25b61afc4a733b18aaef",
   "size": 1419520,
-  "changelog": "## boturo_go v1.0.1\n- auto-published from boturo_go\n- asset: firmware_boturo_go_v1.0.1.bin",
+  "changelog": "Fixes battery drain\nImproves OTA retry handling\nAdjusts reminder timing",
   "force": false
 }
