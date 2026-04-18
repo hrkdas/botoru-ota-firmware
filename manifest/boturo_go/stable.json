@@ -1,11 +1,11 @@
 {
   "channel": "stable",
   "variant_key": "boturo_go",
-  "version": "1.1.0",
-  "release_tag": "boturo_go-v1.1.0",
-  "firmware_url": "https://github.com/hrkdas/botoru-ota-firmware/releases/download/boturo_go-v1.1.0/firmware_boturo_go_v1.1.0.bin",
-  "sha256": "a785fcf361f075e0b31b1b48f85c58421dbc7822fa2f86d876561d17c839a039",
-  "size": 988128,
+  "version": "1.1.1",
+  "release_tag": "boturo_go-v1.1.1",
+  "firmware_url": "https://github.com/hrkdas/botoru-ota-firmware/releases/download/boturo_go-v1.1.1/firmware_boturo_go_v1.1.1.bin",
+  "sha256": "4a4c369d8b65d9ba543a18f6f6d1ce35293a28b94034e71bbebf85d49f679389",
+  "size": 956432,
   "changelog": "Improved notification reliability for drink and medicine reminders\nReminders now reschedule correctly after restart, midnight, and timezone changes\nMedicine reminder toggles now apply instantly without missing doses\nDrink reminder intervals now apply correctly from first pair\nModes and Routines rules now sync to bottle on first pair\nOTA retry handling improvements\nBLE connection stability and recovery improvements",
   "force": false
 }
