@@ -1,9 +1,9 @@
 {
   "channel": "stable",
-  "version": "boturo_go-v1.1.0",
-  "firmware_url": "https://github.com/hrkdas/botoru-ota-firmware/releases/download/boturo_go-v1.1.0/firmware_boturo_go_v1.1.0.bin",
-  "sha256": "a785fcf361f075e0b31b1b48f85c58421dbc7822fa2f86d876561d17c839a039",
-  "size": 988128,
-  "changelog": "Auto-generated from release boturo_go-v1.1.0",
+  "version": "boturo_go-v1.1.1",
+  "firmware_url": "https://github.com/hrkdas/botoru-ota-firmware/releases/download/boturo_go-v1.1.1/firmware_boturo_go_v1.1.1.bin",
+  "sha256": "4a4c369d8b65d9ba543a18f6f6d1ce35293a28b94034e71bbebf85d49f679389",
+  "size": 956432,
+  "changelog": "Auto-generated from release boturo_go-v1.1.1",
   "force": false
 }
