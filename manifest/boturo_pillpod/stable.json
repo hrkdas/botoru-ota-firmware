@@ -1,0 +1,11 @@
+{
+  "channel": "stable",
+  "variant_key": "boturo_pillpod",
+  "version": "1.0.1",
+  "release_tag": "boturo_pillpod-v1.0.1",
+  "firmware_url": "https://github.com/hrkdas/botoru-ota-firmware/releases/download/boturo_pillpod-v1.0.1/firmware_boturo_pillpod_v1.0.1.bin",
+  "sha256": "a24196eb3798500484089b3f28d251d8cef548e21af417a0a9954f1259e187c1",
+  "size": 1579440,
+  "changelog": "Initial PillPod release \u2014 medicine-only reminder device\nMedicine reminder scheduling, glow, and buzzer preserved identical to boturo_go\nOTA, BLE session protocol, and persistence unchanged from boturo_go",
+  "force": false
+}
