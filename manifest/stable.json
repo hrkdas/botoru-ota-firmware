@@ -1,9 +1,9 @@
 {
   "channel": "stable",
-  "version": "boturo_go-v1.1.1",
-  "firmware_url": "https://github.com/hrkdas/botoru-ota-firmware/releases/download/boturo_go-v1.1.1/firmware_boturo_go_v1.1.1.bin",
-  "sha256": "4a4c369d8b65d9ba543a18f6f6d1ce35293a28b94034e71bbebf85d49f679389",
-  "size": 956432,
-  "changelog": "Auto-generated from release boturo_go-v1.1.1",
+  "version": "boturo_pillpod-v1.0.1",
+  "firmware_url": "https://github.com/hrkdas/botoru-ota-firmware/releases/download/boturo_pillpod-v1.0.1/firmware_boturo_pillpod_v1.0.1.bin",
+  "sha256": "a24196eb3798500484089b3f28d251d8cef548e21af417a0a9954f1259e187c1",
+  "size": 1579440,
+  "changelog": "Auto-generated from release boturo_pillpod-v1.0.1",
   "force": false
 }
